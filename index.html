@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Farol Next — 2026</title>
+  <link rel="stylesheet" href="style.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3.0.1/dist/chartjs-plugin-annotation.min.js"></script>
+</head>
+<body>
+  <div class="app">
+    <header>
+      <div class="header-left">
+        <h1>Farol Next</h1>
+        <span class="year-badge">2026</span>
+      </div>
+      <div class="filters">
+        <div class="period-pills" id="periodPills">
+          <button class="pill active" data-period="all">YTD (Apr+)</button>
+          <button class="pill" data-period="Q2">Q2</button>
+          <button class="pill" data-period="Q3">Q3</button>
+          <button class="pill" data-period="Q4">Q4</button>
+          <button class="pill" data-period="MTD">MTD</button>
+        </div>
+        <div class="date-range">
+          <label>From <input type="date" id="dateFrom" min="2026-04-01" max="2026-12-31" /></label>
+          <label>To <input type="date" id="dateTo"   min="2026-04-01" max="2026-12-31" /></label>
+          <button class="pill ghost" id="clearRange">Clear</button>
+        </div>
+      </div>
+    </header>
+
+    <div class="kpi-row" id="kpiRow"></div>
+
+    <div class="roas-row" id="roasRow"></div>
+    <div class="roas-row" id="volumeRow"></div>
+  </div>
+
+  <script src="data.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
