@@ -63,6 +63,20 @@ function dowAgg(data) {
   return sums.map((s, i) => counts[i] ? s / counts[i] : 0);
 }
 
+// Returns pro-rated BP totals: daily BP rate × number of days with actual data.
+// This makes the BP comparable to actuals on the same time basis
+// (e.g. 4 days into May → BP = daily_rate × 4, not × 31).
+function fullMonthBp(data) {
+  const actualDays = data.filter(d =>
+    d.ftd > 0 || d.spend > 0 || d.d0 > 0 || d.ggr !== 0 || d.deposit > 0
+  );
+  return {
+    bpSpend: actualDays.reduce((s, d) => s + (d.bpSpend || 0), 0),
+    bpFtd:   actualDays.reduce((s, d) => s + (d.bpFtd   || 0), 0),
+    bpD0:    actualDays.reduce((s, d) => s + (d.bpD0    || 0), 0),
+  };
+}
+
 // Compare actual vs BP. Returns 'good' / 'bad' / null.
 // lowerIsBetter=true for cost metrics (spend) where staying under BP is good.
 function vsBp(actual, bp, lowerIsBetter = false) {
@@ -152,12 +166,10 @@ function renderKPIs(data) {
 
   const totalDeposit = data.reduce((s, d) => s + (d.deposit || 0), 0);
 
-  // BP totals for current period
-  const bpSpend = data.reduce((s, d) => s + (d.bpSpend || 0), 0);
-  const bpFtd   = data.reduce((s, d) => s + (d.bpFtd   || 0), 0);
-  // BP totals for M-1 period
-  const prevBpSpend = prevData.reduce((s, d) => s + (d.bpSpend || 0), 0);
-  const prevBpFtd   = prevData.reduce((s, d) => s + (d.bpFtd   || 0), 0);
+  // BP totals for current period — always full monthly targets
+  const { bpSpend, bpFtd } = fullMonthBp(data);
+  // BP totals for M-1 period — full month
+  const { bpSpend: prevBpSpend, bpFtd: prevBpFtd } = fullMonthBp(prevData);
 
   const kpis = [
     { label: 'Total GGR',     value: fmt(total),        bp: '—',                              sub: `${days} days`,   m1: fmt(prevGgr),     m1Bp: '—', status: null, delta: null },
@@ -394,16 +406,15 @@ function renderDowChart(data) {
 }
 
 function renderVolumeCards(data) {
-  const totalFtd = data.reduce((s, d) => s + (d.ftd   || 0), 0);
-  const totalD0  = data.reduce((s, d) => s + (d.d0    || 0), 0);
-  const bpFtd    = data.reduce((s, d) => s + (d.bpFtd || 0), 0);
-  const bpD0     = data.reduce((s, d) => s + (d.bpD0  || 0), 0);
+  const totalFtd = data.reduce((s, d) => s + (d.ftd || 0), 0);
+  const totalD0  = data.reduce((s, d) => s + (d.d0  || 0), 0);
+  // Full-month BP targets
+  const { bpFtd, bpD0 } = fullMonthBp(data);
 
   const { prevLabel, prevData } = getPrevMonthSlice(data);
-  const prevFtd   = prevData.reduce((s, d) => s + (d.ftd   || 0), 0);
-  const prevD0    = prevData.reduce((s, d) => s + (d.d0    || 0), 0);
-  const prevBpFtd = prevData.reduce((s, d) => s + (d.bpFtd || 0), 0);
-  const prevBpD0  = prevData.reduce((s, d) => s + (d.bpD0  || 0), 0);
+  const prevFtd = prevData.reduce((s, d) => s + (d.ftd || 0), 0);
+  const prevD0  = prevData.reduce((s, d) => s + (d.d0  || 0), 0);
+  const { bpFtd: prevBpFtd, bpD0: prevBpD0 } = fullMonthBp(prevData);
   const m1Tag = prevLabel ? `M-1 (${prevLabel})` : 'M-1';
 
   const cards = [
