@@ -111,6 +111,14 @@ h1 {
   flex-wrap: wrap;
 }
 
+.channel-pills {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  padding-left: 14px;
+  border-left: 1px solid var(--border);
+}
+
 .pill {
   background: var(--surface2);
   color: var(--muted);

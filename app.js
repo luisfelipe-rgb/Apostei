@@ -13,6 +13,7 @@ const DOW_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const MONTH_LABELS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
 let activePeriod = 'all';
+let activeChannel = 'all';
 let customRange = null; // { from, to } when a custom range is set
 let ggrChart, monthlyChart, dowChart;
 
@@ -23,6 +24,37 @@ const fmt = (n) => n >= 1e6
   : 'R$ ' + n.toLocaleString();
 
 const fmtFull = (n) => 'R$ ' + Math.round(n).toLocaleString('pt-BR');
+
+// When a specific channel is selected, swap actuals with channel-level data
+// and replace BP values with channel-specific BP from CHANNEL_BP_DATA.
+// For months not in CHANNEL_BP_DATA (Jun+), BP fields fall back to 0 → shows "—".
+function buildRenderData(ggrData, channel) {
+  if (channel === 'all') return ggrData;
+  const chMap = {};
+  CHANNEL_DATA
+    .filter(d => d.channel === channel)
+    .forEach(d => { chMap[d.date] = d; });
+  const chBpMap = {};
+  CHANNEL_BP_DATA
+    .filter(d => d.channel === channel)
+    .forEach(d => { chBpMap[d.date] = d; });
+  return ggrData.map(row => {
+    const ch   = chMap[row.date];
+    const chBp = chBpMap[row.date];
+    return {
+      ...row,
+      ftd:     ch   ? (ch.ftd   || 0) : 0,
+      d0:      ch   ? (ch.d0    || 0) : 0,
+      d1:      ch   ? (ch.d1    || 0) : 0,
+      spend:   ch   ? (ch.spend || 0) : 0,
+      ggr:     ch   ? (ch.ggr   || 0) : 0,
+      deposit: 0,
+      bpSpend: chBp ? chBp.bpSpend : 0,
+      bpFtd:   chBp ? chBp.bpFtd   : 0,
+      bpD0:    chBp ? chBp.bpD0    : 0,
+    };
+  });
+}
 
 function filterData(period) {
   // Always exclude data before DATA_START (no spend tracking before then)
@@ -456,7 +488,8 @@ function renderVolumeCards(data) {
 }
 
 function render() {
-  const data = filterData(activePeriod);
+  const raw  = filterData(activePeriod);
+  const data = buildRenderData(raw, activeChannel);
   renderKPIs(data);
   renderRoasCards(data);
   renderVolumeCards(data);
@@ -504,6 +537,15 @@ clearBtn.addEventListener('click', () => {
   customRange = null;
   document.querySelector('#periodPills .pill[data-period="all"]').classList.add('active');
   activePeriod = 'all';
+  render();
+});
+
+document.getElementById('channelPills').addEventListener('click', e => {
+  const pill = e.target.closest('.channel-pill');
+  if (!pill) return;
+  document.querySelectorAll('.channel-pill').forEach(p => p.classList.remove('active'));
+  pill.classList.add('active');
+  activeChannel = pill.dataset.channel;
   render();
 });
 
